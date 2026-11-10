@@ -10,34 +10,26 @@
 buildKodiAddon rec {
   pname = "sendtokodi";
   namespace = "plugin.video.sendtokodi";
-  version = "0.9.924";
+  version = "0.10.3";
 
   src = fetchFromGitHub {
     owner = "firsttris";
     repo = "plugin.video.sendtokodi";
     tag = "v${version}";
-    hash = "sha256-ycp5/NbRX2rcRRpbpX6LlplyxdfoIwCw39EyQDcyzOU=";
+    hash = "sha256-LCXeAgQ53FeNn5Z7iJJgDk4EsIedCgOFkrGREPIhi1o=";
   };
-
-  patches = [
-    # Use yt-dlp, only. This removes the ability to use youtube_dl, which is
-    # unmaintained and considered vulnerable (see CVE-2024-38519).
-    ./use-yt-dlp-only.patch
-  ];
 
   propagatedBuildInputs = [
     inputstreamhelper
     requests
   ];
 
-  postPatch = ''
-    # Remove youtube-dl, which is unmaintained and vulnerable.
-    rm -r lib/youtube_dl lib/youtube_dl_version
-    # Replace yt-dlp with our own packaged version thereof.
-    rm -r lib/yt_dlp
-    echo "${lib.strings.getVersion kodi.pythonPackages.yt-dlp}" >lib/yt_dlp_version
-    ln -s ${kodi.pythonPackages.yt-dlp}/${kodi.pythonPackages.python.sitePackages}/yt_dlp lib/
-  '';
+  #postPatch = ''
+  #  # Replace yt-dlp with our own packaged version thereof.
+  #  rm -r lib/yt_dlp
+  #  echo "${lib.strings.getVersion kodi.pythonPackages.yt-dlp}" >lib/yt_dlp_version
+  #  ln -s ${kodi.pythonPackages.yt-dlp}/${kodi.pythonPackages.python.sitePackages}/yt_dlp lib/
+  #'';
 
   meta = {
     homepage = "https://github.com/firsttris/plugin.video.sendtokodi";

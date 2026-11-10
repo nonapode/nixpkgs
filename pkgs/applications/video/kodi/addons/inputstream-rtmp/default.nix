@@ -11,13 +11,13 @@
 buildKodiBinaryAddon rec {
   pname = "inputstream-rtmp";
   namespace = "inputstream.rtmp";
-  version = "21.1.2";
+  version = "22.0.0";
 
   src = fetchFromGitHub {
     owner = "xbmc";
     repo = "inputstream.rtmp";
     rev = "${version}-${rel}";
-    sha256 = "sha256-AkpRbYOe30dWDcflCGXxJz8Y+9bQw9ZmZF88ra2c+fc=";
+    sha256 = "sha256-UerY7ImX1/QGzybh6vgOBWFG2y/F45F38u+cglZLm00=";
   };
 
   extraBuildInputs = [

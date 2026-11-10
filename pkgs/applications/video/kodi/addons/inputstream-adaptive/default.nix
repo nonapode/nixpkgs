@@ -10,26 +10,26 @@
   nspr,
   nss,
   gtest,
-  rapidjson,
+  nlohmann_json,
 }:
 let
   bento4 = fetchFromGitHub {
     owner = "xbmc";
     repo = "Bento4";
-    tag = "1.6.0-641-3-${rel}";
-    hash = "sha256-ycWQvXgr1DQ3Wng73S8i6y6XmcUD/iN8OKfO1czgsnY=";
+    tag = "1.6.0-641-6-${rel}";
+    hash = "sha256-eifKqTchshA1mfOvKlpCbBZmvpqOgNi2JNWir51hOXE=";
   };
 in
 buildKodiBinaryAddon rec {
   pname = "inputstream-adaptive";
   namespace = "inputstream.adaptive";
-  version = "21.5.18";
+  version = "22.3.24";
 
   src = fetchFromGitHub {
     owner = "xbmc";
     repo = "inputstream.adaptive";
     tag = "${version}-${rel}";
-    hash = "sha256-JJaB0HlDLv5CFDE75sXW1e+vCc1BrqzZT6HyBa0LVso=";
+    hash = "sha256-o0K9Y2O594tPGunBPhotG5svq16oH/hIB+xJXxlbzpU=";
   };
 
   extraCMakeFlags = [
@@ -41,7 +41,7 @@ buildKodiBinaryAddon rec {
 
   extraBuildInputs = [
     pugixml
-    rapidjson
+    nlohmann_json
   ];
 
   extraRuntimeDependencies = [
