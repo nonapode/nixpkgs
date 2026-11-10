@@ -2,6 +2,8 @@
   stdenv,
   lib,
   fetchFromGitHub,
+  fetchFromGitLab,
+  fetchurl,
   fetchzip,
   autoconf,
   automake,
@@ -9,9 +11,15 @@
   makeWrapper,
   pkg-config,
   cmake,
+  meson,
+  ninja,
   yasm,
   python3Packages,
   libxcrypt,
+  expat,
+  exiv2,
+  nlohmann_json,
+  libsysprof-capture,
   libgcrypt,
   libgpg-error,
   libunistring,
@@ -19,7 +27,7 @@
   avahi,
   lame,
   gettext,
-  pcre-cpp,
+  pcre2,
   yajl,
   fribidi,
   which,
@@ -94,6 +102,7 @@
   mesa-gl-headers,
   x11Support ? true,
   libx11,
+  libxcb,
   xorgproto,
   libxt,
   libxmu,
@@ -145,25 +154,55 @@ let
 
   # We can build these externally but FindLibDvd.cmake forces us to build it
   # them, so we currently just use them for the src.
-  libdvdcss = fetchFromGitHub {
-    owner = "xbmc";
-    repo = "libdvdcss";
-    rev = "1.4.3-Next-Nexus-Alpha2-2";
-    sha256 = "sha256-CJMGH50mNAkovccNcol5ArF3zUnZKfbVB9EXyQgu5k4=";
+  libdvdcss = fetchurl {
+    url = "https://mirrors.kodi.tv/build-deps/sources/libdvdcss-1.5.0.tar.bz2";
+    hash = "sha512-Q5+9na5guaEU00KaGXA0eMc06FJaxoUtpvBfctnKRMoKxeh0q2oQAX5/MYafzSnwHRvBVsTwMxtOSr2Y7C+VzQ==";
   };
 
-  libdvdnav = fetchFromGitHub {
-    owner = "xbmc";
-    repo = "libdvdnav";
-    rev = "6.1.1-Next-Nexus-Alpha2-2";
-    sha256 = "sha256-m8SCjOokVbwJ7eVfYKHap1pQjVbI+BXaoxhGZQIg0+k=";
+  libdvdnav = fetchurl {
+    url = "https://mirrors.kodi.tv/build-deps/sources/libdvdnav-7.0.0.tar.bz2";
+    hash = "sha512-jRLUduNS3vlxbsvXuhhKcN2brofc3mabhkeg75rBmR9hfJkYwEPhWes1MwLEzFD7cbxZHOrrodO51Hr3f6cscQ==";
   };
 
-  libdvdread = fetchFromGitHub {
-    owner = "xbmc";
-    repo = "libdvdread";
-    rev = "6.1.3-Next-Nexus-Alpha2-2";
-    sha256 = "sha256-AphBQhXud+a6wm52zjzC5biz53NnqWdgpL2QDt2ZuXc=";
+  libdvdread = fetchurl {
+    url = "https://mirrors.kodi.tv/build-deps/sources/libdvdread-7.0.1.tar.bz2";
+    hash = "sha512-tTkKGsuP324kGI+SWRmesP7y3UszJEe6K/pXH5/Aw7+tAMHSeouIBhgKhTwEqBi3gC0wdf94cULBoXWteYxqPQ==";
+  };
+
+  # Kodi 22 requires SWIG >= 4.5.0; nixpkgs provides 4.4.1 at this revision.
+  kodiSwig = buildPackages.swig.overrideAttrs (_: {
+    version = "4.5.0";
+    src = fetchFromGitHub {
+      owner = "swig";
+      repo = "swig";
+      rev = "v4.5.0";
+      hash = "sha256-NXN3Zx66PNpYNuFVCalHymb/GW0cUi5drjIXNOVMgb8=";
+    };
+  });
+
+  # Kodi 22 needs CrossGUID from xbmc/crossguid (pkg-config name "crossguid"),
+  # not the 2016 nixpkgs libcrossguid.
+  kodiCrossguid = stdenv.mkDerivation {
+    pname = "crossguid";
+    version = "0.2.3-ca1bf4b";
+
+    src = fetchFromGitHub {
+      owner = "xbmc";
+      repo = "crossguid";
+      rev = "ca1bf4b810e2d188d04cb6286f957008ee1b7681";
+      hash = "sha256-37tKPDo4lukl/aaDWWSQYfsBNEnDjE7t6OnEZjBhcvQ=";
+    };
+
+    nativeBuildInputs = [ cmake ];
+    buildInputs = [ libuuid ];
+
+    # Kodi's CrossGUID CMake treats warnings as errors, which breaks with newer compilers.
+    postPatch = ''
+      sed -i 's/"-Werror" //' CMakeLists.txt
+      sed -i 's/^#include <iomanip>$/#include <iomanip>\n#include <cstdint>/' include/crossguid/guid.hpp
+    '';
+
+    cmakeFlags = [ "-DCROSSGUID_TESTS=OFF" ];
   };
 
   groovy = fetchzip {
@@ -245,14 +284,14 @@ stdenv.mkDerivation (
   in
   {
     pname = "kodi";
-    version = "21.3";
-    kodiReleaseName = "Omega";
+    version = "22.0rc1";
+    kodiReleaseName = "Piers";
 
     src = fetchFromGitHub {
       owner = "xbmc";
       repo = "xbmc";
       rev = "${finalAttrs.version}-${finalAttrs.kodiReleaseName}";
-      hash = "sha256-36wBAqGEDCRZ4t1ygTg03Pyk7Gg9quUTUGD3SBp6nCk=";
+      hash = "sha256-zIQdK3Rj+TLSopJ1R10kEDlHkrgHa36HFN4VszSUJLM=";
     };
 
     # make  derivations declared in the let binding available here, so
@@ -273,11 +312,15 @@ stdenv.mkDerivation (
       nasm
       p11-kit
       libxml2
+      expat
+      exiv2
+      libsysprof-capture
+      nlohmann_json
       python3Packages.python
       boost
       libmicrohttpd
       gettext
-      pcre-cpp
+      pcre2
       yajl
       fribidi
       libva
@@ -329,7 +372,7 @@ stdenv.mkDerivation (
       libgcrypt
       libgpg-error
       libunistring
-      libcrossguid
+      kodiCrossguid
       libplist
       bluez
       glib
@@ -351,6 +394,7 @@ stdenv.mkDerivation (
     ]
     ++ lib.optionals x11Support [
       libx11
+      libxcb
       xorgproto
       libxt
       libxmu
@@ -387,6 +431,8 @@ stdenv.mkDerivation (
 
     nativeBuildInputs = [
       cmake
+      meson
+      ninja
       doxygen
       makeWrapper
       which
@@ -415,22 +461,24 @@ stdenv.mkDerivation (
 
     cmakeFlags = [
       "-DAPP_RENDER_SYSTEM=${if gbmSupport then "gles" else "gl"}"
-      "-Dlibdvdcss_URL=${finalAttrs.libdvdcss}"
-      "-Dlibdvdnav_URL=${finalAttrs.libdvdnav}"
-      "-Dlibdvdread_URL=${finalAttrs.libdvdread}"
+      "-DLIBDVDCSS_URL=${finalAttrs.libdvdcss}"
+      "-DLIBDVDNAV_URL=${finalAttrs.libdvdnav}"
+      "-DLIBDVDREAD_URL=${finalAttrs.libdvdread}"
       "-Dgroovy_SOURCE_DIR=${finalAttrs.groovy}"
       "-Dapache-commons-lang_SOURCE_DIR=${finalAttrs.apache_commons_lang}"
       "-Dapache-commons-text_SOURCE_DIR=${finalAttrs.apache_commons_text}"
       # Upstream derives this from the git HEADs hash and date.
       # LibreElec (minimal distro for kodi) uses the equivalent to this.
       "-DGIT_VERSION=${finalAttrs.version}-${finalAttrs.kodiReleaseName}"
+      "-DENABLE_TESTING=OFF"
       "-DENABLE_EVENTCLIENTS=ON"
       "-DENABLE_INTERNAL_CROSSGUID=OFF"
       "-DENABLE_INTERNAL_RapidJSON=OFF"
       "-DENABLE_OPTICAL=${if opticalSupport then "ON" else "OFF"}"
       "-DENABLE_VDPAU=${if vdpauSupport then "ON" else "OFF"}"
       "-DLIRC_DEVICE=/run/lirc/lircd"
-      "-DSWIG_EXECUTABLE=${buildPackages.swig}/bin/swig"
+      "-DSWIG_EXECUTABLE=${kodiSwig}/bin/swig"
+      "-DLIBXSLT_LIBRARY=${lib.getLib libxslt}/lib/libxslt.so"
       "-DFLATBUFFERS_FLATC_EXECUTABLE=${buildPackages.flatbuffers}/bin/flatc"
       "-DPYTHON_EXECUTABLE=${buildPackages.python3Packages.python}/bin/python"
       "-DPYTHON_LIB_PATH=${python3Packages.python.sitePackages}"
@@ -449,7 +497,8 @@ stdenv.mkDerivation (
       "-DWITH_TEXTUREPACKER=${lib.getExe texturePacker}"
     ];
 
-    doCheck = stdenv.buildPlatform.canExecute stdenv.hostPlatform;
+    # Tests are not built or run here (gtest is not in the build environment).
+    doCheck = false;
     checkPhase = ''
       runHook preCheck
 
