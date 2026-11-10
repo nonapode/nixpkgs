@@ -227,6 +227,8 @@ let
 
     myconnpy = callPackage ../applications/video/kodi/addons/myconnpy { };
 
+    parkstream = callPackage ../applications/video/kodi/addons/parkstream { };
+
     plugin-cache = callPackage ../applications/video/kodi/addons/plugin-cache { };
 
     requests = callPackage ../applications/video/kodi/addons/requests { };
